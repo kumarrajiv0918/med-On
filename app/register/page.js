@@ -45,13 +45,13 @@ export default function RegisterPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
-
+  const token = localStorage.getItem('authToken');
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       const user = JSON.parse(storedUser);
       console.log('user.roleId', user.roleId);
-      if (user.roleId !== 'admin') {
+      if (user.roleId !== 'admin' && !token) {
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         router.push('/auth');
@@ -109,19 +109,30 @@ export default function RegisterPage() {
       setLoading(true);
 
       if (formData._id) {
-        const updatePayload = { 
-          status : formData.status
-         };
+        const payload = { ...formData };
+        delete payload._id;
+        delete payload.confirmPassword;
         const res = await axios.put(
-          `http://localhost:3001/auth/updateUserStatus/${formData._id}`,
-          updatePayload
+          `http://localhost:3001/api/updateUser/${formData._id}`,
+          updatePayload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
         );
         setMessage(res.data.message);
       } else {
         const payload = { ...formData };
         delete payload._id;
         delete payload.confirmPassword;
-        const res = await axios.post('http://localhost:3001/api/register', payload);
+        const res = await axios.post('http://localhost:3001/api/register', payload,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
         setMessage(res.data.message);
       }
 
@@ -137,7 +148,14 @@ export default function RegisterPage() {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/getAlluserApi/users');
+      const res = await axios.get('http://localhost:3001/getAlluserApi/users', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if(!res){
+        console.log('Failed to fetch users:', err);
+      }
       setUsers(res.data.users);
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -192,8 +210,13 @@ export default function RegisterPage() {
       };
 
       const res = await axios.put(
-        `http://localhost:3001/api/updateUserStatus/${row._id}`,
-        payload
+        `http://localhost:3001/auth/updateUserStatus/${row._id}`,
+        payload,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
       );
 
       setMessage(res.data.message);
@@ -221,7 +244,7 @@ export default function RegisterPage() {
             <EditIcon />
           </IconButton>
           <IconButton
-            color={params.row.status === 'enable' ? 'error' : 'success'}
+            color={params.row.status === 'enable' ? 'success' : 'error'}
             onClick={() => handleToggleUserStatus(params.row)}
           >
             <BlockIcon />
