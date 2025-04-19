@@ -9,10 +9,17 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     const user = await Auth.findOne({ email });
-    if (!user) return res.status(404).json({
+    if (!user ) return res.status(404).json({
       status: false,
        message: 'User not found'
        });
+       if(user.status !== 'enable')
+       {
+        return res.status(404).json({
+          status: false,
+           message: 'Your account has been blocked. Please contact the administrator to reactivate your ID.'
+           });
+       }
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json({
       status: false,

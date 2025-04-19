@@ -36,19 +36,22 @@ export default function Home() {
   const [isClient, setIsClient] = useState(false);
   const [files, setFiles] = useState([]);
   const fileInputRef = useRef(null);
-
+  const token = localStorage.getItem('authToken');
   useEffect(() => {
     setIsClient(true);
-    const token = localStorage.getItem('authToken');
     if (!token) {
       router.push('/auth');
     }
     fetchFiles();
   }, [router]);
-
+console.log("token",token);
   const fetchFiles = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/uploadFile/files');
+      const res = await axios.get('http://localhost:3001/uploadFile/files',{    
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+      });
       console.log('FILES API RESPONSE:', res.data);
       setFiles(Array.isArray(res.data) ? res.data : res.data.files || []);
     } catch (err) {
@@ -72,14 +75,17 @@ export default function Home() {
     setLoading(true);
     try {
       const response = await axios.post('http://localhost:3001/uploadFile/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 
+          'Content-Type': 'multipart/form-data',
+           Authorization: `Bearer ${token}`
+       },
       });
 
       setFileUrl(response.data.fileUrl);
       setQrCodeUrl(response.data.qrCodeUrl || null);
       setFileType(response.data.fileType || null);
       setError(null);
-      fetchFiles(); // Refresh the files list after upload
+      fetchFiles();
     } catch (err) {
       setError('Error uploading file');
     } finally {
